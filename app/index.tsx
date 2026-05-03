@@ -1,2 +1,2 @@
-﻿export { default } from "../src/screens/HomeScreen";
+﻿export { default } from "../src/screens/DashboardScreen";
 
