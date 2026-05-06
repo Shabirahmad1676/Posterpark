@@ -1,7 +1,9 @@
 import { useRouter } from "expo-router";
-import React from "react";
+import React, { useEffect, useRef } from "react";
 import {
   ActivityIndicator,
+  AppState,
+  Linking,
   Pressable,
   StyleSheet,
   Text,
@@ -17,27 +19,40 @@ export default function DashboardScreen() {
     errorMessage,
     unusedCount,
     recentCount,
-    albumScreenshotCount,
+    detectedScreenshotCount,
     limitedAccess,
-    potentialFreeBytes,
+    estimatedUnusedBytes,
     knownSizeCount,
     fetchImagesAndDetectScreenshots,
   } = useScreenshotsContext();
 
+  const appState = useRef(AppState.currentState);
+
+  useEffect(() => {
+    const subscription = AppState.addEventListener("change", (nextAppState) => {
+      if (
+        appState.current.match(/inactive|background/) &&
+        nextAppState === "active"
+      ) {
+        // App has come to the foreground — refresh counts automatically
+        fetchImagesAndDetectScreenshots();
+      }
+      appState.current = nextAppState;
+    });
+
+    return () => {
+      subscription.remove();
+    };
+  }, [fetchImagesAndDetectScreenshots]);
+
   const hasScanned = unusedCount > 0 || recentCount > 0;
   const detectedCount = unusedCount + recentCount;
-  const freeMb = Math.max(0, potentialFreeBytes / (1024 * 1024));
+  const freeMb = Math.max(0, estimatedUnusedBytes / (1024 * 1024));
 
   return (
     <SafeAreaView style={styles.container} edges={["top", "left", "right"]}>
       {/* ── App header ── */}
       <View style={styles.header}>
-        <View style={styles.logoRow}>
-          {/* <View style={styles.logoMark}> */}
-          {/* <Text style={styles.logoMarkText}>SC</Text> */}
-          {/* </View> */}
-          {/* <Text style={styles.appName}>SnapClean</Text> */}
-        </View>
         <Text style={styles.title}>Screenshot Cleanup</Text>
         <Text style={styles.subtitle}>Scan your library and free up space</Text>
       </View>
@@ -49,7 +64,9 @@ export default function DashboardScreen() {
             <ActivityIndicator size="large" color={ACCENT} />
           </View>
           <Text style={styles.loadingTitle}>Scanning…</Text>
-          <Text style={styles.loadingSubtitle}>Analysing your photo library</Text>
+          <Text style={styles.loadingSubtitle}>
+            Analysing your photo library
+          </Text>
         </View>
       ) : (
         <View style={styles.body}>
@@ -57,30 +74,48 @@ export default function DashboardScreen() {
           {errorMessage ? (
             <View style={[styles.banner, styles.bannerError]}>
               <Text style={styles.bannerIcon}>⚠️</Text>
-              <Text style={styles.bannerText}>{errorMessage}</Text>
+              <View style={styles.bannerContent}>
+                <Text style={styles.bannerText}>{errorMessage}</Text>
+                {errorMessage.includes("Permission") && (
+                  <Pressable
+                    onPress={() => Linking.openSettings()}
+                    style={styles.bannerBtn}
+                  >
+                    <Text style={styles.bannerBtnText}>Open Settings</Text>
+                  </Pressable>
+                )}
+              </View>
             </View>
           ) : null}
 
           {limitedAccess ? (
             <View style={[styles.banner, styles.bannerWarn]}>
               <Text style={styles.bannerIcon}>⚡</Text>
-              <Text style={styles.bannerText}>
-                Limited photo access — counts may be lower than your gallery.
-              </Text>
+              <View style={styles.bannerContent}>
+                <Text style={styles.bannerText}>
+                  Limited photo access — counts may be lower than your gallery.
+                </Text>
+                <Pressable
+                  onPress={() => Linking.openSettings()}
+                  style={styles.bannerBtn}
+                >
+                  <Text style={styles.bannerBtnText}>Adjust Settings</Text>
+                </Pressable>
+              </View>
             </View>
           ) : null}
 
-          {albumScreenshotCount > 0 ? (
+          {detectedScreenshotCount > 0 ? (
             <View style={[styles.banner, styles.bannerInfo]}>
               <Text style={styles.bannerIcon}>ℹ️</Text>
               <Text style={styles.bannerText}>
-                Detected {detectedCount} of ~{albumScreenshotCount} screenshot album items.
+                Detected {detectedCount} screenshots in your library.
               </Text>
             </View>
           ) : null}
 
           {/* ── Storage insight card ── */}
-          {/* {unusedCount > 0 ? (
+          {unusedCount > 0 ? (
             <View style={styles.storageCard}>
               <View style={styles.storageCardLeft}>
                 <Text style={styles.storageLabel}>Potential savings</Text>
@@ -97,7 +132,7 @@ export default function DashboardScreen() {
                 <Text style={styles.storageIcon}>💾</Text>
               </View>
             </View>
-          ) : null} */}
+          ) : null}
 
           {/* ── Category cards ── */}
           {hasScanned ? (
@@ -156,7 +191,8 @@ export default function DashboardScreen() {
               </View>
               <Text style={styles.emptyTitle}>Nothing scanned yet</Text>
               <Text style={styles.emptySubtitle}>
-                Tap "Scan Now" to analyse your photo library and find screenshots to clean up.
+                Tap "Scan Now" to analyse your photo library and find
+                screenshots to clean up.
               </Text>
             </View>
           )}
@@ -164,7 +200,10 @@ export default function DashboardScreen() {
           {/* ── Scan CTA ── */}
           <View style={styles.scanWrap}>
             <Pressable
-              style={({ pressed }) => [styles.scanBtn, pressed && styles.scanBtnPressed]}
+              style={({ pressed }) => [
+                styles.scanBtn,
+                pressed && styles.scanBtnPressed,
+              ]}
               onPress={fetchImagesAndDetectScreenshots}
             >
               <Text style={styles.scanBtnText}>
@@ -305,11 +344,26 @@ const styles = StyleSheet.create({
   },
   bannerIcon: { fontSize: 15, marginTop: 1 },
   bannerText: {
-    flex: 1,
     fontSize: 13,
     color: INK,
     fontWeight: "500",
     lineHeight: 18,
+  },
+  bannerContent: {
+    flex: 1,
+    gap: 8,
+  },
+  bannerBtn: {
+    backgroundColor: "rgba(0,0,0,0.05)",
+    paddingVertical: 6,
+    paddingHorizontal: 10,
+    borderRadius: 8,
+    alignSelf: "flex-start",
+  },
+  bannerBtnText: {
+    fontSize: 12,
+    fontWeight: "700",
+    color: INK,
   },
 
   /* ── Storage card ── */

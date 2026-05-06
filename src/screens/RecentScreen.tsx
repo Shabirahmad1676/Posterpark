@@ -1,12 +1,7 @@
+import { FlashList } from "@shopify/flash-list";
 import { useRouter } from "expo-router";
 import React, { useMemo, useState } from "react";
-import {
-  FlatList,
-  Pressable,
-  StyleSheet,
-  Text,
-  View
-} from "react-native";
+import { Pressable, StyleSheet, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { ScreenshotCard } from "../components/ScreenshotCard";
 import { useScreenshotsContext } from "../context/ScreenshotsContext";
@@ -62,18 +57,17 @@ export default function RecentScreen() {
         </View>
       ) : null}
 
-      <FlatList
+      <FlashList
         data={visibleData}
         keyExtractor={(item) => item.id}
-        initialNumToRender={12}
-        maxToRenderPerBatch={12}
-        windowSize={7}
-        updateCellsBatchingPeriod={50}
-        removeClippedSubviews
         contentContainerStyle={styles.listContent}
-        renderItem={({ item, index }: { item: ScreenshotItem; index: number }) => (
-          <ScreenshotCard item={item} onDelete={deleteOne} index={index} />
-        )}
+        renderItem={({
+          item,
+          index,
+        }: {
+          item: ScreenshotItem;
+          index: number;
+        }) => <ScreenshotCard item={item} onDelete={deleteOne} index={index} />}
         ListEmptyComponent={
           <View style={styles.emptyState}>
             <View style={styles.emptyIconWrap}>
