@@ -16,13 +16,16 @@ export default function HomeScreen() {
   const {
     loading,
     errorMessage,
-    oldScreenshots,
-    oldCount,
-    headerText,
+    unusedScreenshots,
+    unusedCount,
     fetchImagesAndDetectScreenshots,
     deleteOne,
     deleteAll,
   } = useScreenshots();
+  const headerText =
+    unusedCount === 0
+      ? "Unused screenshots (7+ days): none"
+      : `Unused screenshots (7+ days): ${unusedCount}`;
 
   return (
     <SafeAreaView style={styles.container} edges={["top", "left", "right"]}>
@@ -44,10 +47,10 @@ export default function HomeScreen() {
 
         <Pressable
           onPress={deleteAll}
-          disabled={oldCount === 0}
+          disabled={unusedCount === 0}
           style={({ pressed }) => [
             styles.deleteBtn,
-            oldCount === 0 && styles.disabled,
+            unusedCount === 0 && styles.disabled,
             pressed && styles.pressed,
           ]}
         >
@@ -69,7 +72,7 @@ export default function HomeScreen() {
       ) : null}
 
       <FlatList
-        data={oldScreenshots}
+        data={unusedScreenshots}
         keyExtractor={(item) => item.id}
         contentContainerStyle={styles.listContent}
         renderItem={({ item }: { item: ScreenshotItem }) => (

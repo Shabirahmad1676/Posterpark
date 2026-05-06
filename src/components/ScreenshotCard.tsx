@@ -1,7 +1,7 @@
 import { Image } from "expo-image";
 import React from "react";
 import { Pressable, StyleSheet, Text, View } from "react-native";
-import type { ScreenshotItem } from "../types/screenshot";
+import type { ScreenshotCategory, ScreenshotItem } from "../types/screenshot";
 
 type Props = {
   item: ScreenshotItem;
@@ -10,6 +10,29 @@ type Props = {
   selected?: boolean;
   onToggleSelect?: (id: string) => void;
   index?: number;
+};
+
+const CATEGORY_LABELS: Record<ScreenshotCategory, string> = {
+  otp: "OTP",
+  receipt: "Receipt",
+  bank: "Bank",
+  meme: "Meme",
+  conversation: "Chat",
+  medical: "Medical",
+  unknown: "Unknown",
+};
+
+const CATEGORY_STYLES: Record<
+  ScreenshotCategory,
+  { bg: string; text: string; border: string }
+> = {
+  otp: { bg: "#fff7ed", text: "#c2410c", border: "#fed7aa" },
+  receipt: { bg: "#fefce8", text: "#a16207", border: "#fde68a" },
+  bank: { bg: "#eef2ff", text: "#3730a3", border: "#c7d2fe" },
+  meme: { bg: "#fdf2f8", text: "#be185d", border: "#fbcfe8" },
+  conversation: { bg: "#ecfdf5", text: "#047857", border: "#a7f3d0" },
+  medical: { bg: "#eff6ff", text: "#1d4ed8", border: "#bfdbfe" },
+  unknown: { bg: "#f8fafc", text: "#475569", border: "#e2e8f0" },
 };
 
 export function ScreenshotCard({
@@ -33,6 +56,8 @@ export function ScreenshotCard({
   // Freshness indicator color
   const freshnessColor =
     daysOld <= 1 ? "#22c55e" : daysOld <= 3 ? "#f59e0b" : "#cbd5e1";
+  const category = item.category ?? "unknown";
+  const categoryStyle = CATEGORY_STYLES[category];
 
   return (
     <Pressable
@@ -62,7 +87,9 @@ export function ScreenshotCard({
           recyclingKey={item.id}
           transition={200}
         />
-        <View style={[styles.freshnessDot, { backgroundColor: freshnessColor }]} />
+        <View
+          style={[styles.freshnessDot, { backgroundColor: freshnessColor }]}
+        />
       </View>
 
       {/* Metadata */}
@@ -71,10 +98,29 @@ export function ScreenshotCard({
           {item.filename}
         </Text>
         <Text style={styles.date}>{dateLabel}</Text>
-        <View style={styles.agePill}>
-          <Text style={styles.ageText}>
-            {daysOld === 0 ? "Today" : daysOld === 1 ? "Yesterday" : `${daysOld}d ago`}
-          </Text>
+        <View style={styles.metaRow}>
+          <View style={styles.agePill}>
+            <Text style={styles.ageText}>
+              {daysOld === 0
+                ? "Today"
+                : daysOld === 1
+                  ? "Yesterday"
+                  : `${daysOld}d ago`}
+            </Text>
+          </View>
+          <View
+            style={[
+              styles.categoryPill,
+              {
+                backgroundColor: categoryStyle.bg,
+                borderColor: categoryStyle.border,
+              },
+            ]}
+          >
+            <Text style={[styles.categoryText, { color: categoryStyle.text }]}>
+              {CATEGORY_LABELS[category]}
+            </Text>
+          </View>
         </View>
       </View>
 
@@ -107,6 +153,7 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     gap: 12,
+    marginBottom: 12,
     borderWidth: 1,
     borderColor: BORDER,
     shadowColor: "#000",
@@ -192,6 +239,22 @@ const styles = StyleSheet.create({
     color: "#475569",
     fontSize: 11,
     fontWeight: "600",
+  },
+  metaRow: {
+    marginTop: 5,
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
+  },
+  categoryPill: {
+    borderRadius: 6,
+    paddingHorizontal: 7,
+    paddingVertical: 2,
+    borderWidth: 1,
+  },
+  categoryText: {
+    fontSize: 11,
+    fontWeight: "700",
   },
 
   /* ── Delete ── */
